@@ -56,12 +56,20 @@ class WorkerNodeConfig:
             if self.requests and self.limits:
                 raise ValueError("Cannot specify both pod_template and requests/limits")
 
+@dataclass
+class AutoscalerOptions:
+    upscaling_mode: Optional[str] = None
+    idle_timeout_seconds: Optional[int] = None
+    env: Optional[Dict[str, str]] = None
+    image: Optional[str] = None
+    resources: Optional[Resources] = None
 
 @dataclass
 class RayJobConfig:
     worker_node_config: typing.List[WorkerNodeConfig]
     head_node_config: typing.Optional[HeadNodeConfig] = None
     enable_autoscaling: bool = False
+    autoscaler_options: Optional[AutoscalerOptions] = None
     runtime_env: typing.Optional[dict] = None
     address: typing.Optional[str] = None
     shutdown_after_job_finishes: bool = False
