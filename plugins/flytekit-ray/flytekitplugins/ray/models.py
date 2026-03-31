@@ -296,7 +296,7 @@ class RayCluster(_common.FlyteIdlEntity):
             head_group_spec=self.head_group_spec.to_flyte_idl() if self.head_group_spec else None,
             worker_group_spec=[wg.to_flyte_idl() for wg in self.worker_group_spec],
             enable_autoscaling=self.enable_autoscaling,
-            autoscaler_options=self.autoscaler_options.to_flyte_idl(),
+            autoscaler_options=self.autoscaler_options.to_flyte_idl() if self.autoscaler_options else None,
         )
 
     @classmethod
