@@ -56,6 +56,7 @@ class WorkerNodeConfig:
             if self.requests and self.limits:
                 raise ValueError("Cannot specify both pod_template and requests/limits")
 
+
 @dataclass
 class AutoscalerOptionsConfig:
     upscaling_mode: Optional[str] = None
@@ -64,6 +65,7 @@ class AutoscalerOptionsConfig:
     image: Optional[str] = None
     requests: Optional[Resources] = None
     limits: Optional[Resources] = None
+
 
 @dataclass
 class RayJobConfig:
@@ -149,16 +151,16 @@ class RayFunctionTask(PythonFunctionTask):
             worker_group_spec.append(
                 WorkerGroupSpec(c.group_name, c.replicas, c.min_replicas, c.max_replicas, c.ray_start_params, k8s_pod)
             )
-        
+
         autoscalerOptions = None
         if cfg.autoscaler_options is not None:
             autoscalerOptions = AutoscalerOptions(
-                upscaling_mode = cfg.autoscaler_options.upscaling_mode,
-                idle_timeout_seconds = cfg.autoscaler_options.idle_timeout_seconds,
-                image = cfg.autoscaler_options.image,
-                env = cfg.autoscaler_options.env,
-                requests = cfg.autoscaler_options.requests,
-                limits = cfg.autoscaler_options.limits,
+                upscaling_mode=cfg.autoscaler_options.upscaling_mode,
+                idle_timeout_seconds=cfg.autoscaler_options.idle_timeout_seconds,
+                image=cfg.autoscaler_options.image,
+                env=cfg.autoscaler_options.env,
+                requests=cfg.autoscaler_options.requests,
+                limits=cfg.autoscaler_options.limits,
             )
 
         ray_job = RayJob(

@@ -2,8 +2,32 @@ import typing
 
 from flyteidl.plugins import ray_pb2 as _ray_pb2
 
+from flytekit import Resources
 from flytekit.models import common as _common
 from flytekit.models.task import K8sPod
+
+
+def _flytekit_resources_to_ray_entries(resources: Resources) -> typing.List[_ray_pb2.Resources.ResourceEntry]:
+    """Convert flytekit.Resources cpu/mem fields to a list of _ray_pb2.Resources.ResourceEntry."""
+    entries = []
+    if resources.cpu is not None:
+        val = resources.cpu[0] if isinstance(resources.cpu, (list, tuple)) else resources.cpu
+        entries.append(_ray_pb2.Resources.ResourceEntry(name=_ray_pb2.Resources.CPU, value=str(val)))
+    if resources.mem is not None:
+        val = resources.mem[0] if isinstance(resources.mem, (list, tuple)) else resources.mem
+        entries.append(_ray_pb2.Resources.ResourceEntry(name=_ray_pb2.Resources.MEMORY, value=str(val)))
+    return entries
+
+
+def _ray_entries_to_flytekit_resources(entries) -> typing.Optional[Resources]:
+    """Convert a list of _ray_pb2.Resources.ResourceEntry back to flytekit.Resources."""
+    cpu, mem = None, None
+    for entry in entries:
+        if entry.name == _ray_pb2.Resources.CPU:
+            cpu = entry.value
+        elif entry.name == _ray_pb2.Resources.MEMORY:
+            mem = entry.value
+    return Resources(cpu=cpu, mem=mem) if (cpu or mem) else None
 
 
 class WorkerGroupSpec(_common.FlyteIdlEntity):
@@ -149,12 +173,12 @@ class HeadGroupSpec(_common.FlyteIdlEntity):
 class AutoscalerOptions(_common.FlyteIdlEntity):
     def __init__(
         self,
-        upscaling_mode: Optional[str] = None,
-        idle_timeout_seconds: Optional[int] = None,
-        image: Optional[str] = None,
-        env: Optional[Dict[str, str]] = None,
-        requests: Optional[Resources] = None,
-        limits: Optional[Resources] =None
+        upscaling_mode: typing.Optional[str] = None,
+        idle_timeout_seconds: typing.Optional[int] = None,
+        image: typing.Optional[str] = None,
+        env: typing.Optional[typing.Dict[str, str]] = None,
+        requests: typing.Optional[Resources] = None,
+        limits: typing.Optional[Resources] = None,
     ):
         self._upscaling_mode = upscaling_mode
         self._idle_timeout_seconds = idle_timeout_seconds
@@ -162,40 +186,60 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
         self._env = env
         self._requests = requests
         self._limits = limits
-    
+
     @property
-    def upscaling_mode(self) -> Optional[str]:
+    def upscaling_mode(self) -> typing.Optional[str]:
         return self._upscaling_mode
-    
+
     @property
-    def idle_timeout_seconds(self) -> Optional[int]:
+    def idle_timeout_seconds(self) -> typing.Optional[int]:
         return self._idle_timeout_seconds
-    
+
     @property
-    def image(self) -> Optional[str]:
+    def image(self) -> typing.Optional[str]:
         return self._image
-    
+
     @property
-    def env(self) -> Optional[Dict[str, str]]:
+    def env(self) -> typing.Optional[typing.Dict[str, str]]:
         return self._env
-    
+
+    @property
+    def requests(self):
+        return self._requests
+
+    @property
+    def limits(self):
+        return self._limits
+
     def to_flyte_idl(self) -> _ray_pb2.AutoscalerOptions:
-        envs List[_ray_pb2.Envvar] = []
-        for key, val in self.env.items():
-            envs.append(_ray_pb2.Envvar(name=key, value=val))
+        envs = []
+        if self.env:
+            for key, val in self.env.items():
+                envs.append(_ray_pb2.EnvVar(name=key, value=val))
+        ray_resources = None
+        if self.requests or self.limits:
+            ray_resources = _ray_pb2.Resources(
+                requests=_flytekit_resources_to_ray_entries(self.requests) if self.requests else [],
+                limits=_flytekit_resources_to_ray_entries(self.limits) if self.limits else [],
+            )
         return _ray_pb2.AutoscalerOptions(
-            upscaling_mode = self.upscaling_mode,
-            idle_timeout_seconds = self.idle_timeout_seconds,
-            image = self.image,
-            env = envs if len(envs) > 0 else None,
+            upscaling_mode=self.upscaling_mode,
+            idle_timeout_seconds=self.idle_timeout_seconds,
+            image=self.image,
+            env=envs if envs else None,
+            resources=ray_resources,
         )
-    
+
     @classmethod
     def from_flyte_idl(cls, proto):
+        has_resources = proto.HasField("resources")
         return cls(
-            upscaling_mode = proto.upscaling_mode,
-            idle_timeout_seconds = proto.idle_timeout_seconds,
-            image = proto.image,
+            upscaling_mode=proto.upscaling_mode,
+            idle_timeout_seconds=proto.idle_timeout_seconds,
+            image=proto.image,
+            env={e.name: e.value for e in proto.env} if proto.env else None,
+            requests=_ray_entries_to_flytekit_resources(proto.resources.requests) if has_resources else None,
+            limits=_ray_entries_to_flytekit_resources(proto.resources.limits) if has_resources else None,
         )
 
 
@@ -209,7 +253,7 @@ class RayCluster(_common.FlyteIdlEntity):
         worker_group_spec: typing.List[WorkerGroupSpec],
         head_group_spec: typing.Optional[HeadGroupSpec] = None,
         enable_autoscaling: bool = False,
-        autoscaler_options: typing.Optional[AutoscalerOptions] = None
+        autoscaler_options: typing.Optional[AutoscalerOptions] = None,
     ):
         self._head_group_spec = head_group_spec
         self._worker_group_spec = worker_group_spec
@@ -239,7 +283,7 @@ class RayCluster(_common.FlyteIdlEntity):
         :rtype: bool
         """
         return self._enable_autoscaling
-    
+
     @property
     def autoscaler_options(self) -> typing.Optional[AutoscalerOptions]:
         return self._autoscaler_options
