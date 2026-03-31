@@ -57,19 +57,20 @@ class WorkerNodeConfig:
                 raise ValueError("Cannot specify both pod_template and requests/limits")
 
 @dataclass
-class AutoscalerOptions:
+class AutoscalerOptionsConfig:
     upscaling_mode: Optional[str] = None
     idle_timeout_seconds: Optional[int] = None
     env: Optional[Dict[str, str]] = None
     image: Optional[str] = None
-    resources: Optional[Resources] = None
+    requests: Optional[Resources] = None
+    limits: Optional[Resources] = None
 
 @dataclass
 class RayJobConfig:
     worker_node_config: typing.List[WorkerNodeConfig]
     head_node_config: typing.Optional[HeadNodeConfig] = None
     enable_autoscaling: bool = False
-    autoscaler_options: Optional[AutoscalerOptions] = None
+    autoscaler_options: Optional[AutoscalerOptionsConfig] = None
     runtime_env: typing.Optional[dict] = None
     address: typing.Optional[str] = None
     shutdown_after_job_finishes: bool = False
@@ -148,12 +149,24 @@ class RayFunctionTask(PythonFunctionTask):
             worker_group_spec.append(
                 WorkerGroupSpec(c.group_name, c.replicas, c.min_replicas, c.max_replicas, c.ray_start_params, k8s_pod)
             )
+        
+        autoscalerOptions = None
+        if cfg.autoscaler_options is not None:
+            autoscalerOptions = AutoscalerOptions(
+                upscaling_mode = cfg.autoscaler_options.upscaling_mode,
+                idle_timeout_seconds = cfg.autoscaler_options.idle_timeout_seconds,
+                image = cfg.autoscaler_options.image,
+                env = cfg.autoscaler_options.env,
+                requests = cfg.autoscaler_options.requests,
+                limits = cfg.autoscaler_options.limits,
+            )
 
         ray_job = RayJob(
             ray_cluster=RayCluster(
                 head_group_spec=head_group_spec,
                 worker_group_spec=worker_group_spec,
                 enable_autoscaling=(cfg.enable_autoscaling if cfg.enable_autoscaling else False),
+                autoscalerOptions=autoscalerOptions,
             ),
             runtime_env=runtime_env,
             runtime_env_yaml=runtime_env_yaml,

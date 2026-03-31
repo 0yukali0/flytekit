@@ -146,6 +146,59 @@ class HeadGroupSpec(_common.FlyteIdlEntity):
         )
 
 
+class AutoscalerOptions(_common.FlyteIdlEntity):
+    def __init__(
+        self,
+        upscaling_mode: Optional[str] = None,
+        idle_timeout_seconds: Optional[int] = None,
+        image: Optional[str] = None,
+        env: Optional[Dict[str, str]] = None,
+        requests: Optional[Resources] = None,
+        limits: Optional[Resources] =None
+    ):
+        self._upscaling_mode = upscaling_mode
+        self._idle_timeout_seconds = idle_timeout_seconds
+        self._image = image
+        self._env = env
+        self._requests = requests
+        self._limits = limits
+    
+    @property
+    def upscaling_mode(self) -> Optional[str]:
+        return self._upscaling_mode
+    
+    @property
+    def idle_timeout_seconds(self) -> Optional[int]:
+        return self._idle_timeout_seconds
+    
+    @property
+    def image(self) -> Optional[str]:
+        return self._image
+    
+    @property
+    def env(self) -> Optional[Dict[str, str]]:
+        return self._env
+    
+    def to_flyte_idl(self) -> _ray_pb2.AutoscalerOptions:
+        envs List[_ray_pb2.Envvar] = []
+        for key, val in self.env.items():
+            envs.append(_ray_pb2.Envvar(name=key, value=val))
+        return _ray_pb2.AutoscalerOptions(
+            upscaling_mode = self.upscaling_mode,
+            idle_timeout_seconds = self.idle_timeout_seconds,
+            image = self.image,
+            env = envs if len(envs) > 0 else None,
+        )
+    
+    @classmethod
+    def from_flyte_idl(cls, proto):
+        return cls(
+            upscaling_mode = proto.upscaling_mode,
+            idle_timeout_seconds = proto.idle_timeout_seconds,
+            image = proto.image,
+        )
+
+
 class RayCluster(_common.FlyteIdlEntity):
     """
     Define RayCluster spec that will be used by KubeRay to launch the cluster.
@@ -156,10 +209,12 @@ class RayCluster(_common.FlyteIdlEntity):
         worker_group_spec: typing.List[WorkerGroupSpec],
         head_group_spec: typing.Optional[HeadGroupSpec] = None,
         enable_autoscaling: bool = False,
+        autoscaler_options: typing.Optional[AutoscalerOptions] = None
     ):
         self._head_group_spec = head_group_spec
         self._worker_group_spec = worker_group_spec
         self._enable_autoscaling = enable_autoscaling
+        self._autoscaler_options = autoscaler_options
 
     @property
     def head_group_spec(self) -> HeadGroupSpec:
@@ -184,6 +239,10 @@ class RayCluster(_common.FlyteIdlEntity):
         :rtype: bool
         """
         return self._enable_autoscaling
+    
+    @property
+    def autoscaler_options(self) -> typing.Optional[AutoscalerOptions]:
+        return self._autoscaler_options
 
     def to_flyte_idl(self) -> _ray_pb2.RayCluster:
         """
@@ -193,6 +252,7 @@ class RayCluster(_common.FlyteIdlEntity):
             head_group_spec=self.head_group_spec.to_flyte_idl() if self.head_group_spec else None,
             worker_group_spec=[wg.to_flyte_idl() for wg in self.worker_group_spec],
             enable_autoscaling=self.enable_autoscaling,
+            autoscaler_options=self.autoscaler_options.to_flyte_idl(),
         )
 
     @classmethod
@@ -205,6 +265,7 @@ class RayCluster(_common.FlyteIdlEntity):
             head_group_spec=HeadGroupSpec.from_flyte_idl(proto.head_group_spec) if proto.head_group_spec else None,
             worker_group_spec=[WorkerGroupSpec.from_flyte_idl(wg) for wg in proto.worker_group_spec],
             enable_autoscaling=proto.enable_autoscaling,
+            autoscaler_options=AutoscalerOptions.from_flyte_idl(proto.autoscaler_options),
         )
 
 
