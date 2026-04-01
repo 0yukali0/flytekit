@@ -59,13 +59,18 @@ class WorkerNodeConfig:
 
 
 @dataclass
+class ResourcesConfig:
+    requests: Optional[Resources] = None
+    limits: Optional[Resources] = None
+
+
+@dataclass
 class AutoscalerOptionsConfig:
     upscaling_mode: Optional[str] = None
     idle_timeout_seconds: Optional[int] = None
     env: Optional[Dict[str, str]] = None
     image: Optional[str] = None
-    requests: Optional[Resources] = None
-    limits: Optional[Resources] = None
+    resources: Optional[ResourcesConfig] = None
 
 
 @dataclass
@@ -155,13 +160,18 @@ class RayFunctionTask(PythonFunctionTask):
 
         autoscalerOptions = None
         if cfg.autoscaler_options is not None:
+            requests = None
+            limits = None
+            if cfg.autoscaler_options.resources is not None:
+                requests = cfg.autoscaler_options.resources.requests if cfg.autoscaler_options.resources.requests is not None else None
+                limits = cfg.autoscaler_options.resources.limits if cfg.autoscaler_options.resources.limits is not None else None
             autoscalerOptions = AutoscalerOptions(
                 upscaling_mode=cfg.autoscaler_options.upscaling_mode,
                 idle_timeout_seconds=cfg.autoscaler_options.idle_timeout_seconds,
                 image=cfg.autoscaler_options.image,
                 env=cfg.autoscaler_options.env,
-                requests=cfg.autoscaler_options.requests,
-                limits=cfg.autoscaler_options.limits,
+                requests=requests,
+                limits=limits,
             )
 
         ray_job = RayJob(
