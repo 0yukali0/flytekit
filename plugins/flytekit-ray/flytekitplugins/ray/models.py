@@ -39,15 +39,33 @@ def _flytekit_resources_to_pb_resources(resources: typing.Optional[Resources]) -
     )
 
 
-def _ray_entries_to_flytekit_resources(entries) -> typing.Optional[Resources]:
-    """Convert a list of _ray_pb2.Resources.ResourceEntry back to flytekit.Resources."""
-    cpu, mem = None, None
-    for entry in entries:
-        if entry.name == _ray_pb2.Resources.CPU:
-            cpu = entry.value
-        elif entry.name == _ray_pb2.Resources.MEMORY:
-            mem = entry.value
-    return Resources(cpu=cpu, mem=mem) if (cpu or mem) else None
+def _ray_resources_to_flytekit_resources(pb_res: typing.Optional[_tasks_pb2.Resources]) -> typing.Optional[Resources]:
+    if pb_res is None:
+        return None
+
+    cpu_request = cpu_limit = mem_request = mem_limit = None
+
+    for entry in pb_res.requests:
+        if entry.name == _tasks_pb2.Resources.ResourceName.CPU:
+            cpu_request = entry.value
+        elif entry.name == _tasks_pb2.Resources.ResourceName.MEMORY:
+            mem_request = entry.value
+
+    for entry in pb_res.limits:
+        if entry.name == _tasks_pb2.Resources.ResourceName.CPU:
+            cpu_limit = entry.value
+        elif entry.name == _tasks_pb2.Resources.ResourceName.MEMORY:
+            mem_limit = entry.value
+
+    cpu = None
+    if cpu_request is not None or cpu_limit is not None:
+        cpu = cpu_request if cpu_request == cpu_limit else (cpu_request, cpu_limit)
+
+    mem = None
+    if mem_request is not None or mem_limit is not None:
+        mem = mem_request if mem_request == mem_limit else (mem_request, mem_limit)
+
+    return Resources(cpu=cpu, mem=mem) if (cpu is not None or mem is not None) else None
 
 
 class WorkerGroupSpec(_common.FlyteIdlEntity):
@@ -222,7 +240,7 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
         return self._env
 
     @property
-    def resources(self):
+    def resources(self) -> typing.Optional[Resources]:
         return self._resources
 
     def to_flyte_idl(self) -> _ray_pb2.AutoscalerOptions:
@@ -231,7 +249,6 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
             for key, val in self.env.items():
                 envs.append(_ray_pb2.KeyValuePair(key=key, value=val))
         return _ray_pb2.AutoscalerOptions(
-            upscaling_mode=self.upscaling_mode,
             idle_timeout_seconds=self.idle_timeout_seconds,
             image=self.image,
             env=envs if envs else None,
@@ -242,12 +259,10 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
     def from_flyte_idl(cls, proto):
         has_resources = proto.HasField("resources")
         return cls(
-            upscaling_mode=proto.upscaling_mode,
             idle_timeout_seconds=proto.idle_timeout_seconds,
             image=proto.image,
             env={e.key: e.value for e in proto.env} if proto.env else None,
-            requests=_ray_entries_to_flytekit_resources(proto.resources.requests) if has_resources else None,
-            limits=_ray_entries_to_flytekit_resources(proto.resources.limits) if has_resources else None,
+            resources=_ray_resources_to_flytekit_resources(has_resources),
         )
 
 
