@@ -13,4 +13,4 @@ This package contains things that are useful when extending Flytekit.
    WorkerNodeConfig
 """
 
-from .task import HeadNodeConfig, RayJobConfig, WorkerNodeConfig, AutoscalerOptionsConfig, ResourcesConfig
+from .task import HeadNodeConfig, RayJobConfig, WorkerNodeConfig, AutoscalerOptionsConfig
