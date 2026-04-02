@@ -58,7 +58,6 @@ class WorkerNodeConfig:
                 raise ValueError("Cannot specify both pod_template and requests/limits")
 
 
-
 @dataclass
 class AutoscalerOptionsConfig:
     upscaling_mode: Optional[str] = None
@@ -160,7 +159,7 @@ class RayFunctionTask(PythonFunctionTask):
                 idle_timeout_seconds=cfg.autoscaler_options.idle_timeout_seconds,
                 image=cfg.autoscaler_options.image,
                 env=cfg.autoscaler_options.env,
-                resources=cfg.autoscaler_options.resources
+                resources=cfg.autoscaler_options.resources,
             )
 
         ray_job = RayJob(

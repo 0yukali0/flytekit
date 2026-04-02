@@ -1,7 +1,7 @@
 import typing
 
-from flyteidl.core import tasks_pb2 as _tasks_pb2
 from flyteidl.core import literals_pb2 as _literals_pb2
+from flyteidl.core import tasks_pb2 as _tasks_pb2
 from flyteidl.plugins import ray_pb2 as _ray_pb2
 
 from flytekit import Resources
@@ -21,7 +21,9 @@ def _flytekit_resources_to_pb_resources(resources: typing.Optional[Resources]) -
             limit = resources.cpu[1] if len(resources.cpu) == 2 else request
         else:
             limit = request = resources.cpu
-        requests.append(_tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.CPU, value=str(request)))
+        requests.append(
+            _tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.CPU, value=str(request))
+        )
         limits.append(_tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.CPU, value=str(limit)))
 
     if resources.mem is not None:
@@ -33,7 +35,9 @@ def _flytekit_resources_to_pb_resources(resources: typing.Optional[Resources]) -
         requests.append(
             _tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.MEMORY, value=str(request))
         )
-        limits.append(_tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.MEMORY, value=str(limit)))
+        limits.append(
+            _tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.MEMORY, value=str(limit))
+        )
     return _tasks_pb2.Resources(
         requests=requests,
         limits=limits,
@@ -250,7 +254,11 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
             for key, val in self.env.items():
                 envs.append(_literals_pb2.KeyValuePair(key=key, value=val))
         return _ray_pb2.AutoscalerOptions(
-            upscaling_mode=_ray_pb2.AutoscalerOptions.UpscalingMode.Value("UPSCALING_MODE_"+self.upscaling_mode.upper()) if self.upscaling_mode else None,
+            upscaling_mode=_ray_pb2.AutoscalerOptions.UpscalingMode.Value(
+                "UPSCALING_MODE_" + self.upscaling_mode.upper()
+            )
+            if self.upscaling_mode
+            else None,
             idle_timeout_seconds=self.idle_timeout_seconds,
             image=self.image,
             env=envs if envs else None,
@@ -261,7 +269,11 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
     def from_flyte_idl(cls, proto):
         has_resources = proto.HasField("resources")
         return cls(
-            upscaling_mode=_ray_pb2.AutoscalerOptions.UpscalingMode.Name(proto.upscaling_mode).removeprefix("UPSCALING_MODE_").title() if proto.upscaling_mode else None,
+            upscaling_mode=_ray_pb2.AutoscalerOptions.UpscalingMode.Name(proto.upscaling_mode)
+            .removeprefix("UPSCALING_MODE_")
+            .title()
+            if proto.upscaling_mode
+            else None,
             idle_timeout_seconds=proto.idle_timeout_seconds,
             image=proto.image,
             env={e.key: e.value for e in proto.env} if proto.env else None,
