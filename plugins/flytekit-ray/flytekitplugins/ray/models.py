@@ -1,6 +1,7 @@
 import typing
 
 from flyteidl.plugins import ray_pb2 as _ray_pb2
+from flyteidl.core import literals_pb2 as _literals_pb2
 
 from flytekit import Resources
 from flytekit.models import common as _common
@@ -212,10 +213,10 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
         return self._limits
 
     def to_flyte_idl(self) -> _ray_pb2.AutoscalerOptions:
-        envs = []
+        envs := []
         if self.env:
             for key, val in self.env.items():
-                envs.append(_ray_pb2.EnvVar(name=key, value=val))
+                envs.append(_ray_pb2.KeyValuePair(key=key, value=val))
         ray_resources = None
         if self.requests or self.limits:
             ray_resources = _ray_pb2.Resources(
@@ -237,7 +238,7 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
             upscaling_mode=proto.upscaling_mode,
             idle_timeout_seconds=proto.idle_timeout_seconds,
             image=proto.image,
-            env={e.name: e.value for e in proto.env} if proto.env else None,
+            env={e.key: e.value for e in proto.env} if proto.env else None,
             requests=_ray_entries_to_flytekit_resources(proto.resources.requests) if has_resources else None,
             limits=_ray_entries_to_flytekit_resources(proto.resources.limits) if has_resources else None,
         )
