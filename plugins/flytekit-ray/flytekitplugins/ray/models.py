@@ -1,6 +1,7 @@
 import typing
 
 from flyteidl.core import tasks_pb2 as _tasks_pb2
+from flyteidl.core import literals_pb2 as _literals_pb2
 from flyteidl.plugins import ray_pb2 as _ray_pb2
 
 from flytekit import Resources
@@ -12,27 +13,27 @@ def _flytekit_resources_to_pb_resources(resources: typing.Optional[Resources]) -
     if resources is None:
         return None
 
-    requests: List[_tasks_pb2.Resources.ResourceEntry] = []
-    limits: List[_tasks_pb2.Resources.ResourceEntry] = []
+    requests: typing.List[_tasks_pb2.Resources.ResourceEntry] = []
+    limits: typing.List[_tasks_pb2.Resources.ResourceEntry] = []
     if resources.cpu is not None:
         if isinstance(resources.cpu, (list, tuple)):
             request = resources.cpu[0]
-            limit = resources.cpu[1] if len(resource.cpu) == 2 else request
+            limit = resources.cpu[1] if len(resources.cpu) == 2 else request
         else:
             limit = request = resources.cpu
-        requests.append(_tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.CPU, value=request))
-        limits.append(_tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.CPU, value=limit))
+        requests.append(_tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.CPU, value=str(request)))
+        limits.append(_tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.CPU, value=str(limit)))
 
     if resources.mem is not None:
         if isinstance(resources.mem, (list, tuple)):
             request = resources.mem[0]
-            limit = resources.mem[1] if len(resource.mem) == 2 else request
+            limit = resources.mem[1] if len(resources.mem) == 2 else request
         else:
             limit = request = resources.mem
         requests.append(
-            _tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.MEMORY, value=request)
+            _tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.MEMORY, value=str(request))
         )
-        limits.append(_tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.MEMORY, value=limit))
+        limits.append(_tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.MEMORY, value=str(limit)))
     return _tasks_pb2.Resources(
         requests=requests,
         limits=limits,
@@ -247,8 +248,9 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
         envs = []
         if self.env:
             for key, val in self.env.items():
-                envs.append(_ray_pb2.KeyValuePair(key=key, value=val))
+                envs.append(_literals_pb2.KeyValuePair(key=key, value=val))
         return _ray_pb2.AutoscalerOptions(
+            upscaling_mode=_ray_pb2.AutoscalerOptions.UpscalingMode.Value("UPSCALING_MODE_"+self.upscaling_mode.upper()) if self.upscaling_mode else None,
             idle_timeout_seconds=self.idle_timeout_seconds,
             image=self.image,
             env=envs if envs else None,
@@ -259,10 +261,11 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
     def from_flyte_idl(cls, proto):
         has_resources = proto.HasField("resources")
         return cls(
+            upscaling_mode=_ray_pb2.AutoscalerOptions.UpscalingMode.Name(proto.upscaling_mode).removeprefix("UPSCALING_MODE_").title() if proto.upscaling_mode else None,
             idle_timeout_seconds=proto.idle_timeout_seconds,
             image=proto.image,
             env={e.key: e.value for e in proto.env} if proto.env else None,
-            resources=_ray_resources_to_flytekit_resources(has_resources),
+            resources=_ray_resources_to_flytekit_resources(proto.resources if has_resources else None),
         )
 
 

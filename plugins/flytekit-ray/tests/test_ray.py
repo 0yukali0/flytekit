@@ -13,7 +13,7 @@ from flytekitplugins.ray.models import (
     RayJob,
     WorkerGroupSpec,
 )
-from flytekitplugins.ray.task import AutoscalerOptionsConfig, RayJobConfig, ResourcesConfig, WorkerNodeConfig
+from flytekitplugins.ray.task import AutoscalerOptionsConfig, RayJobConfig, WorkerNodeConfig
 from google.protobuf.json_format import MessageToDict
 
 from flytekit import PythonFunctionTask, task, PodTemplate, Resources
@@ -45,10 +45,7 @@ config = RayJobConfig(
         idle_timeout_seconds=120,
         image="rayproject/ray:2.9.0",
         env={"lKeyA": "lValA"},
-        resources=ResourcesConfig(
-            requests=Resources(cpu="1", mem="1Gi"),
-            limits=Resources(cpu="2", mem="2Gi"),
-        ),
+        resources=Resources(cpu=("1","2"), mem="1Gi"),
     ),
     shutdown_after_job_finishes=True,
     ttl_seconds_after_finished=20,
@@ -102,8 +99,7 @@ def test_ray_task():
                 idle_timeout_seconds=120,
                 image="rayproject/ray:2.9.0",
                 env={"lKeyA": "lValA"},
-                requests=Resources(cpu="1", mem="1Gi"),
-                limits=Resources(cpu="2", mem="2Gi"),
+                resources = Resources(cpu=("1","2"), mem="1Gi"),
             ),
         ),
         runtime_env=base64.b64encode(json.dumps({"pip": ["numpy"]}).encode()).decode(),
