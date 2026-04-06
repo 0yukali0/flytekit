@@ -4,74 +4,9 @@ from flyteidl.core import literals_pb2 as _literals_pb2
 from flyteidl.core import tasks_pb2 as _tasks_pb2
 from flyteidl.plugins import ray_pb2 as _ray_pb2
 
-from flytekit import Resources
 from flytekit.models import common as _common
+from flytekit.models import task as _task_models
 from flytekit.models.task import K8sPod
-
-
-def _flytekit_resources_to_pb_resources(resources: typing.Optional[Resources]) -> typing.Optional[_tasks_pb2.Resources]:
-    if resources is None:
-        return None
-
-    requests: typing.List[_tasks_pb2.Resources.ResourceEntry] = []
-    limits: typing.List[_tasks_pb2.Resources.ResourceEntry] = []
-    if resources.cpu is not None:
-        if isinstance(resources.cpu, (list, tuple)):
-            request = resources.cpu[0]
-            limit = resources.cpu[1] if len(resources.cpu) == 2 else request
-        else:
-            limit = request = resources.cpu
-        requests.append(
-            _tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.CPU, value=str(request))
-        )
-        limits.append(_tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.CPU, value=str(limit)))
-
-    if resources.mem is not None:
-        if isinstance(resources.mem, (list, tuple)):
-            request = resources.mem[0]
-            limit = resources.mem[1] if len(resources.mem) == 2 else request
-        else:
-            limit = request = resources.mem
-        requests.append(
-            _tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.MEMORY, value=str(request))
-        )
-        limits.append(
-            _tasks_pb2.Resources.ResourceEntry(name=_tasks_pb2.Resources.ResourceName.MEMORY, value=str(limit))
-        )
-    return _tasks_pb2.Resources(
-        requests=requests,
-        limits=limits,
-    )
-
-
-def _ray_resources_to_flytekit_resources(pb_res: typing.Optional[_tasks_pb2.Resources]) -> typing.Optional[Resources]:
-    if pb_res is None:
-        return None
-
-    cpu_request = cpu_limit = mem_request = mem_limit = None
-
-    for entry in pb_res.requests:
-        if entry.name == _tasks_pb2.Resources.ResourceName.CPU:
-            cpu_request = entry.value
-        elif entry.name == _tasks_pb2.Resources.ResourceName.MEMORY:
-            mem_request = entry.value
-
-    for entry in pb_res.limits:
-        if entry.name == _tasks_pb2.Resources.ResourceName.CPU:
-            cpu_limit = entry.value
-        elif entry.name == _tasks_pb2.Resources.ResourceName.MEMORY:
-            mem_limit = entry.value
-
-    cpu = None
-    if cpu_request is not None or cpu_limit is not None:
-        cpu = cpu_request if cpu_request == cpu_limit else (cpu_request, cpu_limit)
-
-    mem = None
-    if mem_request is not None or mem_limit is not None:
-        mem = mem_request if mem_request == mem_limit else (mem_request, mem_limit)
-
-    return Resources(cpu=cpu, mem=mem) if (cpu is not None or mem is not None) else None
-
 
 class WorkerGroupSpec(_common.FlyteIdlEntity):
     def __init__(
@@ -220,7 +155,7 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
         idle_timeout_seconds: typing.Optional[int] = None,
         image: typing.Optional[str] = None,
         env: typing.Optional[typing.Dict[str, str]] = None,
-        resources: typing.Optional[Resources] = None,
+        resources: typing.Optional[_task_models.Resources] = None,
     ):
         self._upscaling_mode = upscaling_mode
         self._idle_timeout_seconds = idle_timeout_seconds
@@ -245,7 +180,7 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
         return self._env
 
     @property
-    def resources(self) -> typing.Optional[Resources]:
+    def resources(self) -> typing.Optional[_task_models.Resources]:
         return self._resources
 
     def to_flyte_idl(self) -> _ray_pb2.AutoscalerOptions:
@@ -262,12 +197,10 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
             idle_timeout_seconds=self.idle_timeout_seconds,
             image=self.image,
             env=envs if envs else None,
-            resources=_flytekit_resources_to_pb_resources(self.resources),
+            resources=self.resources.to_flyte_idl() if self.resources else None,
         )
-
     @classmethod
     def from_flyte_idl(cls, proto):
-        has_resources = proto.HasField("resources")
         return cls(
             upscaling_mode=_ray_pb2.AutoscalerOptions.UpscalingMode.Name(proto.upscaling_mode)
             .removeprefix("UPSCALING_MODE_")
@@ -277,7 +210,7 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
             idle_timeout_seconds=proto.idle_timeout_seconds,
             image=proto.image,
             env={e.key: e.value for e in proto.env} if proto.env else None,
-            resources=_ray_resources_to_flytekit_resources(proto.resources if has_resources else None),
+            resources=_task_models.Resources.from_flyte_idl(proto.resources) if proto.HasField("resources") else None,
         )
 
 

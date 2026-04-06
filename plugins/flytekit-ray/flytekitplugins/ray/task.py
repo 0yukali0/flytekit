@@ -4,6 +4,7 @@ import os
 import typing
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional
+from flytekit.core.resources import convert_resources_to_resource_model
 
 import yaml
 from flytekitplugins.ray.models import (
@@ -64,8 +65,8 @@ class AutoscalerOptionsConfig:
     idle_timeout_seconds: Optional[int] = None
     env: Optional[Dict[str, str]] = None
     image: Optional[str] = None
-    resources: Optional[Resources] = None
-
+    requests: Optional[Resources] = None
+    limits: Optional[Resources] = None
 
 @dataclass
 class RayJobConfig:
@@ -159,7 +160,10 @@ class RayFunctionTask(PythonFunctionTask):
                 idle_timeout_seconds=cfg.autoscaler_options.idle_timeout_seconds,
                 image=cfg.autoscaler_options.image,
                 env=cfg.autoscaler_options.env,
-                resources=cfg.autoscaler_options.resources,
+                resources=convert_resources_to_resource_model(
+                    requests=cfg.autoscaler_options.requests,
+                    limits=cfg.autoscaler_options.limits,
+                )
             )
 
         ray_job = RayJob(

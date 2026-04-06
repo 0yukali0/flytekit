@@ -4,7 +4,7 @@ import json
 import ray
 import yaml
 
-from flytekit.core.resources import pod_spec_from_resources
+from flytekit.core.resources import convert_resources_to_resource_model, pod_spec_from_resources
 from flytekitplugins.ray import HeadNodeConfig
 from flytekitplugins.ray.models import (
     AutoscalerOptions,
@@ -45,7 +45,8 @@ config = RayJobConfig(
         idle_timeout_seconds=120,
         image="rayproject/ray:2.9.0",
         env={"lKeyA": "lValA"},
-        resources=Resources(cpu=("1","2"), mem="1Gi"),
+        requests=Resources(cpu="1", mem="1Gi"),
+        limits=Resources(cpu="2", mem="2Gi"),
     ),
     shutdown_after_job_finishes=True,
     ttl_seconds_after_finished=20,
@@ -99,7 +100,10 @@ def test_ray_task():
                 idle_timeout_seconds=120,
                 image="rayproject/ray:2.9.0",
                 env={"lKeyA": "lValA"},
-                resources = Resources(cpu=("1","2"), mem="1Gi"),
+                resources=convert_resources_to_resource_model(
+                    requests=Resources(cpu="1", mem="1Gi"),
+                    limits=Resources(cpu="2", mem="2Gi"),
+                ),
             ),
         ),
         runtime_env=base64.b64encode(json.dumps({"pip": ["numpy"]}).encode()).decode(),
