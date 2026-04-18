@@ -1,12 +1,12 @@
 import typing
 
 from flyteidl.core import literals_pb2 as _literals_pb2
-from flyteidl.core import tasks_pb2 as _tasks_pb2
 from flyteidl.plugins import ray_pb2 as _ray_pb2
 
 from flytekit.models import common as _common
 from flytekit.models import task as _task_models
 from flytekit.models.task import K8sPod
+
 
 class WorkerGroupSpec(_common.FlyteIdlEntity):
     def __init__(
@@ -199,6 +199,7 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
             env=envs if envs else None,
             resources=self.resources.to_flyte_idl() if self.resources else None,
         )
+
     @classmethod
     def from_flyte_idl(cls, proto):
         return cls(

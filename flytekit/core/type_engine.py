@@ -563,7 +563,9 @@ class DataclassTransformer(TypeTransformer[object]):
             original_dict = v
 
             # Find the Optional keys in expected_fields_dict
-            optional_keys = {k for k, t in expected_fields_dict.items() if UnionTransformer.is_optional_type(cast(type, t))}
+            optional_keys = {
+                k for k, t in expected_fields_dict.items() if UnionTransformer.is_optional_type(cast(type, t))
+            }
 
             # Remove the Optional keys from the keys of original_dict
             original_key = set(original_dict.keys()) - optional_keys
