@@ -780,6 +780,10 @@ class PythonFunctionWorkflow(WorkflowBase, ClassStorageTaskResolver):
         self.compiled = False
 
     @property
+    def name(self) -> str:  # type: ignore[override]
+        return self._name
+
+    @property
     def function(self):
         return self._workflow_function
 

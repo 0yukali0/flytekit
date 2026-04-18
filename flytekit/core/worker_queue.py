@@ -454,7 +454,7 @@ class Controller:
             for item in items_list:
                 exec_output = ""
                 if item.is_in_terminal_state:
-                    exec_output = item.result if item.result else item.error
+                    exec_output = str(item.result if item.result else item.error)
 
                 kind = _entity_type(item.entity)
 

@@ -440,7 +440,7 @@ def transform_function_to_interface(
     # This is just for typing.NamedTuples - in those cases, the user can select a name to call the NamedTuple. We
     # would like to preserve that name in our custom collections.namedtuple.
     custom_name = None
-    if hasattr(return_annotation, "__bases__"):
+    if return_annotation is not None and hasattr(return_annotation, "__bases__"):
         bases = return_annotation.__bases__
         if len(bases) == 1 and bases[0] == tuple and hasattr(return_annotation, "_fields"):
             if hasattr(return_annotation, "__name__") and return_annotation.__name__ != "":
