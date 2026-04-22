@@ -91,16 +91,16 @@ class ArtifactIDSpecification(object):
                 if not self.artifact.partition_keys or k not in self.artifact.partition_keys:
                     raise ValueError(f"Partition key {k} not found in {self.artifact.partition_keys}")
                 if isinstance(v, art_id.InputBindingData):
-                    p.partitions[k] = Partition(art_id.LabelValue(input_binding=v), name=k)  # type: ignore[index]
+                    p.partitions[k] = Partition(art_id.LabelValue(input_binding=v), name=k)
                 elif isinstance(v, str):
-                    p.partitions[k] = Partition(art_id.LabelValue(static_value=v), name=k)  # type: ignore[index]
+                    p.partitions[k] = Partition(art_id.LabelValue(static_value=v), name=k)
                 else:
                     raise ValueError(f"Partition key {k} needs to be input binding data or static string, not {v}")
 
             for k in self.artifact.partition_keys:
-                if k not in p.partitions:  # type: ignore[operator]
+                if k not in p.partitions:
                     logger.debug(f"Partition {k} not bound for {self.artifact.name}, setting to dynamic binding.")
-                    p.partitions[k] = Partition(value=DYNAMIC_INPUT_BINDING, name=k)  # type: ignore[index]
+                    p.partitions[k] = Partition(value=DYNAMIC_INPUT_BINDING, name=k)
             # Given the context, shouldn't need to set further reference_artifacts.
             self.partitions = p
 
@@ -348,7 +348,7 @@ class Partitions(object):
         return ", ".join([str(x) for x in self.__rich_repr__()])
 
     @property
-    def partitions(self) -> Optional[typing.Dict[str, Partition]]:
+    def partitions(self) -> typing.Dict[str, Partition]:
         return self._partitions
 
     def set_reference_artifact(self, artifact: Artifact):
