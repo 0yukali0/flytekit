@@ -41,7 +41,7 @@ config = RayJobConfig(
     runtime_env={"pip": ["numpy"]},
     enable_autoscaling=True,
     autoscaler_options=AutoscalerOptionsConfig(
-        upscaling_mode="Conservative",
+        upscaling_mode=AutoscalerOptionsConfig.UpscalingMode.CONSERVATIVE,
         idle_timeout_seconds=120,
         image="rayproject/ray:2.9.0",
         env={"lKeyA": "lValA"},
@@ -96,7 +96,7 @@ def test_ray_task():
             head_group_spec=HeadGroupSpec(k8s_pod=K8sPod.from_pod_template(head_pod_template)),
             enable_autoscaling=True,
             autoscaler_options=AutoscalerOptions(
-                upscaling_mode="Conservative",
+                upscaling_mode=AutoscalerOptions.UpscalingMode.CONSERVATIVE,
                 idle_timeout_seconds=120,
                 image="rayproject/ray:2.9.0",
                 env={"lKeyA": "lValA"},

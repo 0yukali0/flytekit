@@ -149,9 +149,15 @@ class HeadGroupSpec(_common.FlyteIdlEntity):
 
 
 class AutoscalerOptions(_common.FlyteIdlEntity):
+    class UpscalingMode(object):
+        UNSPECIFIED = _ray_pb2.AutoscalerOptions.UpscalingMode.UPSCALING_MODE_UNSPECIFIED
+        DEFAULT = _ray_pb2.AutoscalerOptions.UpscalingMode.UPSCALING_MODE_DEFAULT
+        AGGRESSIVE = _ray_pb2.AutoscalerOptions.UpscalingMode.UPSCALING_MODE_AGGRESSIVE
+        CONSERVATIVE = _ray_pb2.AutoscalerOptions.UpscalingMode.UPSCALING_MODE_CONSERVATIVE
+
     def __init__(
         self,
-        upscaling_mode: typing.Optional[str] = None,
+        upscaling_mode: typing.Optional["AutoscalerOptions.UpscalingMode"] = None,
         idle_timeout_seconds: typing.Optional[int] = None,
         image: typing.Optional[str] = None,
         env: typing.Optional[typing.Dict[str, str]] = None,
@@ -164,7 +170,7 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
         self._resources = resources
 
     @property
-    def upscaling_mode(self) -> typing.Optional[str]:
+    def upscaling_mode(self) -> typing.Optional["AutoscalerOptions.UpscalingMode"]:
         return self._upscaling_mode
 
     @property
@@ -189,11 +195,7 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
             for key, val in self.env.items():
                 envs.append(_literals_pb2.KeyValuePair(key=key, value=val))
         return _ray_pb2.AutoscalerOptions(
-            upscaling_mode=_ray_pb2.AutoscalerOptions.UpscalingMode.Value(
-                "UPSCALING_MODE_" + self.upscaling_mode.upper()
-            )
-            if self.upscaling_mode
-            else None,
+            upscaling_mode=self.upscaling_mode,
             idle_timeout_seconds=self.idle_timeout_seconds,
             image=self.image,
             env=envs if envs else None,
@@ -203,11 +205,7 @@ class AutoscalerOptions(_common.FlyteIdlEntity):
     @classmethod
     def from_flyte_idl(cls, proto):
         return cls(
-            upscaling_mode=_ray_pb2.AutoscalerOptions.UpscalingMode.Name(proto.upscaling_mode)
-            .removeprefix("UPSCALING_MODE_")
-            .title()
-            if proto.upscaling_mode
-            else None,
+            upscaling_mode=proto.upscaling_mode,
             idle_timeout_seconds=proto.idle_timeout_seconds,
             image=proto.image,
             env={e.key: e.value for e in proto.env} if proto.env else None,

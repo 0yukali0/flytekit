@@ -60,7 +60,8 @@ class WorkerNodeConfig:
 
 @dataclass
 class AutoscalerOptionsConfig:
-    upscaling_mode: Optional[str] = None
+    UpscalingMode = AutoscalerOptions.UpscalingMode
+    upscaling_mode: Optional["AutoscalerOptions.UpscalingMode"] = None
     idle_timeout_seconds: Optional[int] = None
     env: Optional[Dict[str, str]] = None
     image: Optional[str] = None
