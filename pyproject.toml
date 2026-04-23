@@ -150,6 +150,9 @@ extend-exclude = ["tests/", "**/tests/**"]
 ignore-words-list = "ot,te,raison,fo,lits,assertIn"
 skip = "./docs/build,./.git,*.txt"
 
+[tool.uv.sources]
+flyteidl = { git = "https://github.com/0yukali0/flyte.git", subdirectory = "flyteidl", rev = "f4429c98ec51a13f41eada406e9d5d8765cfa459" }
+
 [project.optional-dependencies]
 # TODO: Remove it when we remove all the agent code
 agent = [
